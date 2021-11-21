@@ -1,7 +1,10 @@
 #pragma once
 #include <iostream>
 #include <stdio.h>
+#include <map>
 #include <vector>
+#include <algorithm>
+#include <string>
 #include "./libdisasm/libdisasm/libdis.h"
 
 
@@ -161,14 +164,6 @@ typedef struct MY_IMAGE_SECTION_HEADER {
 } MY_IMAGE_SECTION_HEADER;
 
 
-typedef struct {
-
-	std::string name;
-	DWORD size;
-
-} section_info;
-
-
 int def_section(DWORD rva, MY_IMAGE_SECTION_HEADER* sections, WORD n_sections, WORD section_aligment) {
 
 	for (WORD i = 0; i < n_sections; ++i) 	{
@@ -260,25 +255,56 @@ void set_section_flags(char* ch, DWORD flags) {
 }
 
 
-std::vector<section_info> parse_args(int argc, char* argv[]) {
+bool is_number(std::string s) {
+	return !s.empty() && std::all_of(s.begin(), s.end(), ::isdigit);
+}
 
+
+std::map<std::string, long> parse_args(int argc, char* argv[]) {
+	
+	const std::vector<std::string> sections = { ".text", ".textbss", ".data", ".rdata", ".idata", ".rsrc", ".reloc", ".00cfg" };
+	std::map<std::string, long> out;
 	if (argc < 3) {
 
-		return {};
+		return out;
 
 	}
 	else {
 
+		if (strcmp(argv[2], "all") == 0) {
+
+			int size = -1;
+			if ((argc > 3) and is_number(argv[3])) {
+
+				size = std::stoi(argv[3]);
+
+			}
+			printf("size %i", size);
+
+			for (auto& section : sections) {
+
+				out[section] = size;
+
+			}
+			return out;
+
+		}
 		int i = 2; 
 		while (i < argc) {
 
+			out[argv[i]] = -1;
+			i += 1;
+			if ((i < argc) and is_number(argv[i])) {
 
+				out[argv[i - 1]] = std::stoi(argv[i]);
+				i += 1;
+
+			}
 
 		}
-
+		return out;
 
 	}
-
 
 }
 
@@ -312,31 +338,71 @@ void print_section(FILE* fr, MY_IMAGE_SECTION_HEADER* sections, WORD section_ind
 }
 
 
+void print_code(FILE* fr, MY_IMAGE_SECTION_HEADER* sections, WORD section_index, WORD n_sections, DWORD ImageBase, DWORD Alignment, DWORD size) {
 
-int parse_executable(std::string filename, std::vector<section_info> sections_info) {
+	DWORD addr = rva_to_offset(sections[section_index].VirtualAddress, sections, n_sections, Alignment);
+	unsigned long pos = ftell(fr);
+	fseek(fr, addr, SEEK_SET);
+	char* text = (char*)malloc(sections[section_index].SizeOfRawData);
+	fread(text, 1, sections[section_index].SizeOfRawData, fr);
+
+	x86_insn_t insn;
+	unsigned buf_len = sections[section_index].SizeOfRawData;
+	unsigned offset = 0;
+	uint64_t buf_rva = sections[section_index].VirtualAddress;
+	unsigned char* buf = (unsigned char*)text;
+
+	char output[100];
+
+	int row = 1;
+	int new_end = -1;
+	DWORD min = sections[section_index].SizeOfRawData > size ? size : sections[section_index].SizeOfRawData;
+	while (offset < min) {
+
+		new_end = x86_disasm(buf, buf_len, buf_rva, offset, &insn);
+		if (new_end == 0) {
+			break;
+		}
+		x86_format_insn(&insn, output, 100, x86_asm_format::intel_syntax);
+		printf("%08X : ", ImageBase + insn.addr);
+		printf(output);
+		printf("\n");
+		offset += new_end;
+		row += 1;
+
+	}
+	fseek(fr, pos, SEEK_SET);
+
+};
+
+
+int parse_executable(std::string filename, std::map<std::string, long> sections_info) {
 
 	FILE* fr;
-	printf("START with file %s\n", filename.c_str());
+	printf("Reading %s\n", filename.c_str());
 	fopen_s(&fr, filename.c_str(), "r");
-	printf("OPEN FILE\n");
+
 	MY_IMAGE_DOS_HEADER header;
 	fread(&header, sizeof(header), 1, fr);
 
-	printf("magic = %i offset = %i\n", header.e_magic, header.e_lfanew);
+	//printf("magic = %i offset = %i\n", header.e_magic, header.e_lfanew);
+
 	if (((header.e_magic & BYTE1) != 'M') or (((header.e_magic & BYTE2) >> 8) != 'Z')) {
 
 		printf("Something wrong with file\n");
 		return -1;
 
 	}
-	printf("str = %c%c\n", header.e_magic & BYTE1, (header.e_magic & BYTE2) >> 8);
-	fseek(fr, header.e_lfanew, SEEK_SET);
 
+	//printf("str = %c%c\n", header.e_magic & BYTE1, (header.e_magic & BYTE2) >> 8);
+
+	fseek(fr, header.e_lfanew, SEEK_SET);
 	MY_IMAGE_NT_HEADERS nt_header;
 	fread(&nt_header, sizeof(nt_header), 1, fr);
 
-	printf("str = %c%c\n", nt_header.Signature & BYTE1, (nt_header.Signature & BYTE2) >> 8);
-	printf("Machine = %X\n", nt_header.FileHeader.Machine);//nt_header.FileHeader.Machine & BYTE1, (nt_header.FileHeader.Machine & BYTE2) >> 8);
+	//printf("str = %c%c\n", nt_header.Signature & BYTE1, (nt_header.Signature & BYTE2) >> 8);
+	//printf("Machine = %X\n", nt_header.FileHeader.Machine);//nt_header.FileHeader.Machine & BYTE1, (nt_header.FileHeader.Machine & BYTE2) >> 8);
+
 	if ((nt_header.OptionalHeader.Magic) == 0x10b) {
 
 		printf("Format = PE32\n");
@@ -346,73 +412,39 @@ int parse_executable(std::string filename, std::vector<section_info> sections_in
 
 		printf("Format = PE32+\n");
 
-	}
+	}	
 
 	WORD n_sections = nt_header.FileHeader.NumberOfSections;
 	MY_IMAGE_SECTION_HEADER* sections = (MY_IMAGE_SECTION_HEADER*)malloc(sizeof(MY_IMAGE_SECTION_HEADER) * n_sections);
 	fread(sections, sizeof(MY_IMAGE_SECTION_HEADER), n_sections, fr);
-	printf("Number of section is %i\n", n_sections);
+	//printf("Number of sections is %i\n", n_sections);
 
 	for (WORD i = 0; i < n_sections; ++i) {
 
-		printf("Section name %-8s\n", (char*)sections[i].Name);
-		printf("Size of section is %i\n", sections[i].SizeOfRawData);
-		DWORD flags = sections[i].Characteristics;
-		
-		char ch[17] = "---------------";
-		
-		// deprecated if (flags & IMAGE_FILE_BYTES_REVERSED_HI) {
-		printf("Flags: %s\n", ch);
+		std::string name = std::string((char*)sections[i].Name);
+		if (sections_info.find(name) != sections_info.end()) {
 
-		if ( (strcmp((char*)sections[i].Name, ".text") == 0)) {
+			printf("Section name %-8s\n", name.c_str());
+			printf("Size of section is %i\n", sections[i].SizeOfRawData);
+			DWORD flags = sections[i].Characteristics;
 
-			DWORD addr = rva_to_offset(sections[i].VirtualAddress, sections, n_sections, nt_header.OptionalHeader.SectionAlignment);
-			//DWORD addr = nt_h\eader.OptionalHeader.BaseOfCode;
-			printf("Address = %X\n");
-			unsigned long pos = ftell(fr);
-			fseek(fr, addr, SEEK_SET);
-			char* text = (char*)malloc(sections[i].SizeOfRawData);
-			fread(text, 1, sections[i].SizeOfRawData, fr);
+			char ch[17] = "---------------";
+			set_section_flags(ch, flags);
+			printf("Flags: %s\n", ch);
 
-			//x86_insn_t insn;
-			//unsigned buf_len = sections[i].SizeOfRawData;
-			//unsigned offset = 0;
-			//uint64_t buf_rva = sections[i].VirtualAddress;
-			//unsigned char* buf = (unsigned char*)text;
+			long size = sections_info[name];
+			size = size < 0 ? sections[i].SizeOfRawData : size;
+			if (name == ".text") {
 
-			////int new_end = x86_disasm(buf, buf_len, buf_rva, offset, &insn);
-			////printf("offset = %i, MNEMONIC = %s\n", offset, insn.mnemonic);
-			//char output[100];
-			///*x86_format_insn(&insn,output, 100, x86_asm_format::native_syntax);
-			//printf(output);
-			//printf("\n");*/
-			////x86_format_header(output, 100, x86_asm_format::intel_syntax);
-			////printf(output);
-			////	exit(1);
-			////offset += new_end;
-			//int row = 1;
-			//int new_end = -1;
-			//while (offset < sections[i].SizeOfRawData) {
+				print_code(fr, sections, i, n_sections, nt_header.OptionalHeader.ImageBase,
+					nt_header.OptionalHeader.SectionAlignment, size);
 
-			//	new_end = x86_disasm(buf, buf_len, buf_rva, offset, &insn);
-			//	if (new_end == 0) {
+			}
+			else {
 
-			//		break;
+				print_section(fr, sections, i, n_sections, nt_header.OptionalHeader.SectionAlignment, size);
 
-			//	}
-			//	//printf("offset = %i, MNEMONIC = %s\n", offset, insn.mnemonic);
-			//	x86_format_insn(&insn, output, 100, x86_asm_format::intel_syntax);
-			//	printf("%08X : ", nt_header.OptionalHeader.ImageBase + insn.addr);
-			//	printf(output);
-			//	printf("\n");
-			//	offset += new_end;
-			//	row += 1;
-
-			//}
-			//exit(0);
-			
-			DWORD size = 200;
-			print_section(fr, sections, i, n_sections, nt_header.OptionalHeader.SectionAlignment, size);
+			}
 
 		}
 
