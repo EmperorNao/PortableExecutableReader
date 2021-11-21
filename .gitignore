@@ -40,3 +40,5 @@
 *.txt
 *.pdb
 /Portable*
+*.suo
+*.db
