@@ -309,7 +309,7 @@ std::map<std::string, long> parse_args(int argc, char* argv[]) {
 }
 
 
-void print_section(FILE* fr, MY_IMAGE_SECTION_HEADER* sections, WORD section_index, WORD n_sections, DWORD Alignment,  DWORD size) {
+void print_section(FILE* fr, MY_IMAGE_SECTION_HEADER* sections, WORD section_index, WORD n_sections, DWORD ImageBase, DWORD Alignment,  DWORD size) {
 
 	DWORD addr = rva_to_offset(sections[section_index].VirtualAddress, sections, n_sections, Alignment);
 	unsigned long pos = ftell(fr);
@@ -320,10 +320,11 @@ void print_section(FILE* fr, MY_IMAGE_SECTION_HEADER* sections, WORD section_ind
 	DWORD min = size > sections[section_index].SizeOfRawData ? sections[section_index].SizeOfRawData : size;
 	DWORD full_size = min;
 
-	BYTE number_in_row = 15;
+	BYTE number_in_row = 8;
 	for (DWORD j = 0; j + number_in_row < min; j += number_in_row) {
 
 		int dig = (full_size - number_in_row > 0) ? number_in_row : full_size;
+		printf("%08X : ", ImageBase + sections[section_index].VirtualAddress + j);
 		for (int i = 0; i < dig; ++i) {
 
 			printf("%02X ", BYTE(text[j + i]));
@@ -442,7 +443,8 @@ int parse_executable(std::string filename, std::map<std::string, long> sections_
 			}
 			else {
 
-				print_section(fr, sections, i, n_sections, nt_header.OptionalHeader.SectionAlignment, size);
+				print_section(fr, sections, i, n_sections, nt_header.OptionalHeader.ImageBase, 
+					nt_header.OptionalHeader.SectionAlignment, size);
 
 			}
 

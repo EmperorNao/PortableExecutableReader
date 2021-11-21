@@ -86,7 +86,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -139,10 +139,36 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="libdisasm\libdisasm\ia32_implicit.c" />
+    <ClCompile Include="libdisasm\libdisasm\ia32_insn.c" />
+    <ClCompile Include="libdisasm\libdisasm\ia32_invariant.c" />
+    <ClCompile Include="libdisasm\libdisasm\ia32_modrm.c" />
+    <ClCompile Include="libdisasm\libdisasm\ia32_opcode_tables.c" />
+    <ClCompile Include="libdisasm\libdisasm\ia32_operand.c" />
+    <ClCompile Include="libdisasm\libdisasm\ia32_reg.c" />
+    <ClCompile Include="libdisasm\libdisasm\ia32_settings.c" />
+    <ClCompile Include="libdisasm\libdisasm\x86_disasm.c" />
+    <ClCompile Include="libdisasm\libdisasm\x86_format.c" />
+    <ClCompile Include="libdisasm\libdisasm\x86_imm.c" />
+    <ClCompile Include="libdisasm\libdisasm\x86_insn.c" />
+    <ClCompile Include="libdisasm\libdisasm\x86_misc.c" />
+    <ClCompile Include="libdisasm\libdisasm\x86_operand_list.c" />
     <ClCompile Include="Source.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Headers.h" />
+    <ClInclude Include="libdisasm\libdisasm\ia32_implicit.h" />
+    <ClInclude Include="libdisasm\libdisasm\ia32_insn.h" />
+    <ClInclude Include="libdisasm\libdisasm\ia32_invariant.h" />
+    <ClInclude Include="libdisasm\libdisasm\ia32_modrm.h" />
+    <ClInclude Include="libdisasm\libdisasm\ia32_opcode_tables.h" />
+    <ClInclude Include="libdisasm\libdisasm\ia32_operand.h" />
+    <ClInclude Include="libdisasm\libdisasm\ia32_reg.h" />
+    <ClInclude Include="libdisasm\libdisasm\ia32_settings.h" />
+    <ClInclude Include="libdisasm\libdisasm\libdis.h" />
+    <ClInclude Include="libdisasm\libdisasm\qword.h" />
+    <ClInclude Include="libdisasm\libdisasm\x86_imm.h" />
+    <ClInclude Include="libdisasm\libdisasm\x86_operand_list.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
