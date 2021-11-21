@@ -30,3 +30,13 @@
 *.exe
 *.out
 *.app
+
+*.user
+*.filters
+*.vcxproj
+*.log
+*.ilk
+*.recipe
+*.txt
+*.pdb
+/Portable*
