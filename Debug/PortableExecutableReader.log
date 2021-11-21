@@ -1,0 +1,5 @@
+﻿  Source.cpp
+P:\D\Programming\PortableExecutableReader\Headers.h(297,11): warning C4473: "printf": передано недостаточно аргументов для строки формата
+P:\D\Programming\PortableExecutableReader\Headers.h(297,11): message : заполнители и их параметры ожидают переменное число аргументов в количестве 1, но было предоставлено 0
+P:\D\Programming\PortableExecutableReader\Headers.h(297,11): message : отсутствующий вариативный аргумент "1" требуется для строки форматирования "%X"
+  PortableExecutableReader.vcxproj -> P:\D\Programming\PortableExecutableReader\Debug\PortableExecutableReader.exe
