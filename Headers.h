@@ -2,6 +2,8 @@
 #include <iostream>
 #include <stdio.h>
 #include <chrono>
+#include "libdis.h"
+
 
 #define WORD uint16_t
 #define DWORD uint32_t
@@ -83,7 +85,7 @@ typedef struct {
 } dos_header;
 
 
-typedef struct _IMAGE_FILE_HEADER {
+typedef struct MY_IMAGE_FILE_HEADER {
 	WORD  Machine;
 	WORD  NumberOfSections;
 	DWORD TimeDateStamp;
@@ -91,16 +93,16 @@ typedef struct _IMAGE_FILE_HEADER {
 	DWORD NumberOfSymbols;
 	WORD  SizeOfOptionalHeader;
 	WORD  Characteristics;
-} IMAGE_FILE_HEADER, * PIMAGE_FILE_HEADER;
+} MY_IMAGE_FILE_HEADER;
 
 
-typedef struct _IMAGE_DATA_DIRECTORY {
+typedef struct MY_IMAGE_DATA_DIRECTORY {
 	DWORD VirtualAddress;
 	DWORD Size;
-} IMAGE_DATA_DIRECTORY, * PIMAGE_DATA_DIRECTORY;
+} MY_IMAGE_DATA_DIRECTORY;
 
 
-typedef struct _IMAGE_OPTIONAL_HEADER {
+typedef struct MY_IMAGE_OPTIONAL_HEADER {
 	WORD                 Magic;
 	BYTE                 MajorLinkerVersion;
 	BYTE                 MinorLinkerVersion;
@@ -132,16 +134,16 @@ typedef struct _IMAGE_OPTIONAL_HEADER {
 	DWORD                LoaderFlags;
 	DWORD                NumberOfRvaAndSizes;
 	IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];
-} IMAGE_OPTIONAL_HEADER, * PIMAGE_OPTIONAL_HEADER;
+} MY_IMAGE_OPTIONAL_HEADER;
 
 
-typedef struct _IMAGE_NT_HEADERS {
+typedef struct MY_IMAGE_NT_HEADERS {
 	DWORD                 Signature;
 	IMAGE_FILE_HEADER     FileHeader;
 	IMAGE_OPTIONAL_HEADER OptionalHeader;
-} IMAGE_NT_HEADERS, * PIMAGE_NT_HEADERS;
+} MY_IMAGE_NT_HEADERS;
 
-typedef struct _IMAGE_SECTION_HEADER {
+typedef struct MY_IMAGE_SECTION_HEADER {
 	BYTE  Name[IMAGE_SIZEOF_SHORT_NAME];
 	union {
 		DWORD PhysicalAddress;
@@ -155,7 +157,7 @@ typedef struct _IMAGE_SECTION_HEADER {
 	WORD  NumberOfRelocations;
 	WORD  NumberOfLinenumbers;
 	DWORD Characteristics;
-} IMAGE_SECTION_HEADER, * PIMAGE_SECTION_HEADER;
+} MY_IMAGE_SECTION_HEADER;
 
 
 int defSection(DWORD rva, IMAGE_SECTION_HEADER* sections, WORD n_sections, WORD section_aligment)
@@ -299,7 +301,7 @@ void parse(int argc, char* argv[]) {
 		// deprecated if (flags & IMAGE_FILE_BYTES_REVERSED_HI) {
 		printf("Flags: %s\n", ch);
 
-		if ((strcmp((char*)sections[i].Name, ".data") == 0) or (strcmp((char*)sections[i].Name, ".text") == 0)) {
+		if ( (strcmp((char*)sections[i].Name, ".text") == 0)) {
 
 			DWORD addr = rvaToOff(sections[i].VirtualAddress, sections, n_sections, nt_header.OptionalHeader.SectionAlignment);
 			//DWORD addr = nt_h\eader.OptionalHeader.BaseOfCode;
@@ -308,6 +310,15 @@ void parse(int argc, char* argv[]) {
 			fseek(fr, addr, SEEK_SET);
 			char* text = (char*)malloc(sections[i].SizeOfRawData);
 			fread(text, 1, sections[i].SizeOfRawData, fr);
+
+			x86_insn_t insn;
+			unsigned buf_len = sections[i].SizeOfRawData;
+			unsigned offset = 0;
+			uint64_t buf_rva = sections[i].VirtualAddress;
+			unsigned char* buf = (unsigned char*)text;
+			x86_disasm(buf, buf_len, buf_rva, offset, &insn);
+			printf("MNEMONIC = %s", insn.mnemonic);
+			exit(0);
 			
 			DWORD max_size = 50;
 			DWORD min = max_size > sections[i].SizeOfRawData ? sections[i].SizeOfRawData : max_size;
