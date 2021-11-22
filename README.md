@@ -1,7 +1,7 @@
 # PortableExecutableReader
-Для получения из машинного кода мнемонических команд ассемблера использовался репозиторий 
-https://github.com/geekprojects/libdisasm/tree/master/libdisasm с некоторыми изменениями
-# Запуск
+Р”Р»СЏ РїРѕР»СѓС‡РµРЅРёСЏ РёР· РјР°С€РёРЅРЅРѕРіРѕ РєРѕРґР° РјРЅРµРјРѕРЅРёС‡РµСЃРєРёС… РєРѕРјР°РЅРґ Р°СЃСЃРµРјР±Р»РµСЂР° РёСЃРїРѕР»СЊР·РѕРІР°Р»СЃСЏ СЂРµРїРѕР·РёС‚РѕСЂРёР№ 
+https://github.com/geekprojects/libdisasm/tree/master/libdisasm СЃ РЅРµРєРѕС‚РѕСЂС‹РјРё РёР·РјРµРЅРµРЅРёСЏРјРё
+# Р—Р°РїСѓСЃРє
 ```
-PortableExecutableReader.exe [all] [%i] [.text] [%i] [.data] [%i] [.rdata] [%i] [.idata] [%i]
+PortableExecutableReader.exe filename [all] [%i] [.text] [%i] [.data] [%i] [.rdata] [%i] [.idata] [%i]
 ```
